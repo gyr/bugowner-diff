@@ -1,0 +1,95 @@
+[project]
+name = "bugowner-diff"
+dynamic = ["version"]
+description = "Diff package bugownership between an IBS project and the SLFO maintainership file"
+authors = [
+    {name = "Gustavo Yokoyama Ribeiro", email = "gyribeiro@suse.com"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "defusedxml>=0.7.1",
+]
+
+[project.scripts]
+bugowner-diff = "bugowner_diff.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.5.0",
+    "ruff>=0.1.0",
+    "types-defusedxml>=0.7.0",
+]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0+unknown"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bugowner_diff"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    # N817: 'from defusedxml import ElementTree as ET' triggers "CamelCase imported as
+    # acronym" because defusedxml is a single-level package. The stdlib form
+    # 'from xml.etree import ElementTree as ET' does NOT trigger it (ruff exempts
+    # dotted-path imports). 'ET' is an established Python convention for ElementTree;
+    # suppressed project-wide since the alias will appear in more than one repository.
+    "N817",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+explicit_package_bases = true
+mypy_path = "src"
+namespace_packages = true
+
+# Type checking is scoped to production code. `files` makes a bare `mypy` check
+# src/; `exclude` stops `mypy .` crawling into tests/, so auto-detecting gate
+# tooling gets the same answer either way. Preferred over an
+# `ignore_errors = true` override on tests.*, which reports "Success" while
+# silently swallowing real errors. Trade-off, accepted deliberately: from
+# commit 4 on, Protocol fakes are checked for conformance at runtime by pytest
+# rather than statically at their injection site.
+files = ["src"]
+exclude = "^tests/"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=src/bugowner_diff --cov-report=term-missing --cov-fail-under=90"
