@@ -5,4 +5,4 @@ Protocol plus one Impl, injected at the command layer, and a second import path
 for either half invites a second implementation to hide behind it.
 """
 
-__all__ = ["package_list_repository"]
+__all__ = ["obs_project_repository", "package_list_repository"]
