@@ -9,12 +9,9 @@ class BugownerDiffError(Exception):
     every concrete type below is a direct child, so one ``except`` arm can
     never swallow a sibling meant for a different exit code.
 
-    ``OSError`` escapes this tree by design -- ``errno`` already says more
-    about a failed open, read or rename than a wrapper could add, so the
-    repositories let it through raw and the CLI maps it. The one other
-    deliberate escape is the documented ``ValueError`` of
-    :class:`~bugowner_diff.repositories.package_list_repository.PackageListRepository`,
-    which predates :class:`InputError` and is mapped the same way. Anything
+    ``OSError`` is the only type that escapes this tree by design -- ``errno``
+    already says more about a failed open, read or rename than a wrapper could
+    add, so the repositories let it through raw and the CLI maps it. Anything
     else that escapes is a bug and is reported as one, with its traceback.
     """
 

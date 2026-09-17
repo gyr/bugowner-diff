@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from bugowner_diff.exceptions import InputError
 from bugowner_diff.repositories.package_list_repository import (
     MAX_PACKAGE_LIST_BYTES,
     MAX_PACKAGE_NAME_LENGTH,
@@ -132,7 +133,7 @@ def test_load_rejects_a_name_that_leaves_the_allowlist(tmp_path: Path, name: str
     # handed to a subprocess argv, so the allowlist is the chokepoint.
     file_path = _write(tmp_path, f"SDL3\n{name}\n")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InputError):
         PackageListRepositoryImpl().load(file_path)
 
 
@@ -143,7 +144,7 @@ def test_load_names_the_line_number_and_the_offending_name_when_it_rejects(
     # what the user sees in an editor.
     file_path = _write(tmp_path, "SDL3\n\nethtool\nbad name\nspice\n")
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InputError) as excinfo:
         PackageListRepositoryImpl().load(file_path)
 
     message = str(excinfo.value)
@@ -166,7 +167,7 @@ def test_load_treats_a_line_splitter_other_than_newline_as_part_of_the_name(
     # name, leaves the allowlist and aborts the load.
     file_path = _write(tmp_path, f"SDL3{separator}ethtool\n")
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InputError) as excinfo:
         PackageListRepositoryImpl().load(file_path)
 
     message = str(excinfo.value)
@@ -188,7 +189,7 @@ def test_load_accepts_a_name_of_the_maximum_allowed_length(tmp_path: Path) -> No
 def test_load_rejects_a_name_one_character_over_the_maximum_length(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "a" * (MAX_PACKAGE_NAME_LENGTH + 1))
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InputError):
         PackageListRepositoryImpl().load(file_path)
 
 
@@ -231,7 +232,7 @@ def test_load_reads_a_file_of_exactly_the_byte_cap(tmp_path: Path) -> None:
 def test_load_refuses_a_file_one_byte_over_the_byte_cap(tmp_path: Path) -> None:
     file_path = _file_of_exactly(tmp_path, MAX_PACKAGE_LIST_BYTES + 1)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InputError) as excinfo:
         PackageListRepositoryImpl().load(file_path)
 
     # The user cannot act on the refusal without being told the limit.
@@ -262,7 +263,7 @@ def test_load_bounds_the_read_of_a_file_whose_reported_size_is_zero(tmp_path: Pa
     try:
         assert fifo_path.stat().st_size == 0
 
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(InputError) as excinfo:
             PackageListRepositoryImpl().load(fifo_path)
 
         assert str(MAX_PACKAGE_LIST_BYTES) in str(excinfo.value)
@@ -281,7 +282,7 @@ def test_load_truncates_the_rejected_name_it_echoes_back(tmp_path: Path) -> None
     long_line = "k" * 40 + "=" + "v" * 500
     file_path = _write(tmp_path, f"SDL3\n{long_line}\n")
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(InputError) as excinfo:
         PackageListRepositoryImpl().load(file_path)
 
     message = str(excinfo.value)
@@ -293,18 +294,38 @@ def test_load_truncates_the_rejected_name_it_echoes_back(tmp_path: Path) -> None
 
 def test_load_rejects_a_file_that_is_not_valid_utf_8(tmp_path: Path) -> None:
     # utf-8-sig is a deliberate choice, so its failure mode is part of the
-    # contract. UnicodeDecodeError is a ValueError subclass, which is what lets
-    # the taxonomy stay at three exceptions.
+    # contract. The decode failure is translated to InputError so it maps to
+    # exit 64, instead of reaching the CLI's catch-all as a bug report.
     file_path = tmp_path / "packages.txt"
     file_path.write_bytes(b"SDL3\nspi\xe7e\n")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(InputError) as excinfo:
         PackageListRepositoryImpl().load(file_path)
+
+    # The offset is the only thing that locates the fault, so it is contract
+    # rather than incidental phrasing. Matched with its label, never as a bare
+    # "8", which "UTF-8" in the same message would satisfy on its own.
+    assert "byte offset 8" in str(excinfo.value)
+
+
+def test_load_counts_a_decode_failure_from_the_first_byte_of_the_file(tmp_path: Path) -> None:
+    # utf-8-sig strips the BOM before decoding, so UnicodeDecodeError.start is
+    # an offset into the stripped buffer, three bytes short of what a hex dump
+    # of the file shows -- wrong in exactly the case the utf-8-sig choice
+    # exists to serve. The same bad byte as the test above, moved by the BOM.
+    file_path = tmp_path / "packages.txt"
+    file_path.write_bytes(b"\xef\xbb\xbfSDL3\nspi\xe7e\n")
+
+    with pytest.raises(InputError) as excinfo:
+        PackageListRepositoryImpl().load(file_path)
+
+    assert "byte offset 11" in str(excinfo.value)
 
 
 def test_load_leaves_a_read_failure_as_an_os_error_for_the_caller(tmp_path: Path) -> None:
-    # Deliberately unwrapped rather than translated: the exit-code ladder maps
-    # exception type to exit code, so wrapping this in ValueError here would
-    # merge "bad input file" with "bad name inside a good file".
+    # Deliberately unwrapped rather than translated: errno already says more
+    # about a failed open than a wrapper could add, and the contract maps a
+    # bad -i path to exit 1, while InputError is reserved for a file whose
+    # *contents* are unusable and maps to exit 64.
     with pytest.raises(OSError):
         PackageListRepositoryImpl().load(tmp_path / "does-not-exist.txt")

@@ -10,9 +10,12 @@ report is specified to carry one row per input package, so a dropped name would
 silently shorten the CSV and read as a successful run.
 """
 
+import codecs
 import re
 from pathlib import Path
 from typing import Protocol, runtime_checkable
+
+from bugowner_diff.exceptions import InputError
 
 MAX_PACKAGE_NAME_LENGTH = 200
 
@@ -50,12 +53,12 @@ class PackageListRepository(Protocol):
             The package names, stripped, without blanks and without repeats.
 
         Raises:
-            ValueError: If the file exceeds the implementation's size limit, is
+            InputError: If the file exceeds the implementation's size limit, is
                 not valid UTF-8, or a name leaves the ``[A-Za-z0-9._+-]``
                 allowlist or ``MAX_PACKAGE_NAME_LENGTH`` characters. A decode
-                failure arrives as ``UnicodeDecodeError``, a ``ValueError``
-                subclass, and is the one rejection reported with a byte offset
-                instead of a line number.
+                failure is translated from ``UnicodeDecodeError``, and is the
+                one rejection reported with a byte offset instead of a line
+                number.
             OSError: If the file cannot be opened or read. Left unwrapped for
                 the caller, which owns the mapping from failure to exit code.
         """
@@ -82,13 +85,33 @@ class PackageListRepositoryImpl:
         with file_path.open("rb") as handle:
             data = handle.read(MAX_PACKAGE_LIST_BYTES + 1)
         if len(data) > MAX_PACKAGE_LIST_BYTES:
-            raise ValueError(
+            raise InputError(
                 f"package list exceeds {MAX_PACKAGE_LIST_BYTES} bytes; refusing to read it"
             )
 
         # utf-8-sig, not utf-8: an editor-written BOM would otherwise be part of
         # the first name only, and read as a defect in that one package.
-        text = data.decode("utf-8-sig")
+        #
+        # Wrapped where the other two rejections raise directly, because this
+        # one is not ours to begin with: an escaping UnicodeDecodeError would
+        # reach the CLI's catch-all and be reported as a bug with a traceback,
+        # when it is an unusable input file like any other. The byte offset
+        # replaces the line number a decoded text would have had; the offending
+        # bytes are left out for the reason given at _MAX_SHOWN_NAME_LENGTH.
+        try:
+            text = data.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            # exc.start indexes the buffer utf-8-sig decoded, which is the file
+            # with any BOM already removed, so a BOM file would be given an
+            # offset three bytes before the byte a hex dump shows -- wrong in
+            # precisely the case utf-8-sig is here to handle. Counting from 0
+            # is stated because the sibling rejection counts lines from 1.
+            offset = exc.start
+            if data.startswith(codecs.BOM_UTF8):
+                offset += len(codecs.BOM_UTF8)
+            raise InputError(
+                f"package list is not valid UTF-8 at byte offset {offset}, counting from 0"
+            ) from exc
 
         names: list[str] = []
         seen: set[str] = set()
@@ -115,7 +138,7 @@ class PackageListRepositoryImpl:
                 # !r, not the bare name: repr escapes control characters, so a
                 # name carrying ANSI or a bidi override cannot rewrite the
                 # terminal line the user reads the complaint on.
-                raise ValueError(
+                raise InputError(
                     f"invalid package name on line {line_number}: {shown!r}; "
                     f"expected [A-Za-z0-9._+-] up to {MAX_PACKAGE_NAME_LENGTH} characters"
                 )
