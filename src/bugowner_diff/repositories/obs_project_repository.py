@@ -231,10 +231,12 @@ def _parse_listing(body: bytes) -> frozenset[str]:
     # root.findall("entry") or root.iter("entry"). Both of those *search*, and
     # whatever a search fails to match is silently absent from the result --
     # which here means a package reported as absent from a project it is in, the
-    # one failure this module must not have. Two documents get past both calls,
-    # verified: <entry><entry name='spice'/></entry>, where findall sees only the
-    # outer element, and <entry xmlns='urn:x' name='spice'/>, which ElementTree
-    # renders as "{urn:x}entry" so neither call matches it. Iterating cannot drop
+    # one failure this module must not have. Two documents show it, verified:
+    # <entry><entry name='spice'/></entry>, where findall sees only the outer,
+    # nameless element and the nested name is gone -- iter is recursive and does
+    # find both, so nesting defeats findall alone -- and
+    # <entry xmlns='urn:x' name='spice'/>, which ElementTree renders as
+    # "{urn:x}entry" so neither call matches it at all. Iterating cannot drop
     # anything: every child is either counted or refused. Comments, processing
     # instructions and whitespace never become children, so document formatting
     # cannot trip the rule.

@@ -11,7 +11,9 @@ class ExitCode(IntEnum):
 
     - ``OK`` -- the diff completed.
     - ``ERROR`` -- any unclassified failure.
-    - ``USAGE`` -- bad argv or an unusable input file.
+    - ``USAGE`` -- bad argv, or an input file whose contents are unusable. A file
+      that could not be opened or read is ``OSError`` and ``ERROR`` instead; the
+      split is stated where ``InputError`` is defined.
     - ``TIMEOUT`` -- a subprocess exceeded its deadline.
     - ``MISSING_BINARY`` -- a required binary is not on ``PATH``.
     - ``INTERRUPT`` -- SIGINT, i.e. ``KeyboardInterrupt`` (128 + 2).

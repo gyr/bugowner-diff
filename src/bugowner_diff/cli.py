@@ -209,6 +209,7 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="log_level",
         action="store_const",
         const=logging.ERROR,
-        help="Log at ERROR level, silencing the warnings about unusable source data.",
+        help="Log at ERROR level, silencing the warnings about owner names that render "
+        "ambiguously.",
     )
     return parser
