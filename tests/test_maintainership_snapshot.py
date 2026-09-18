@@ -198,4 +198,4 @@ def test_parse_tagged_snapshot_warns_about_an_ambiguous_name_and_keeps_it(
         snapshot = parse_tagged_snapshot(_document({"ethtool": {"users": [owner], "groups": []}}))
 
     assert snapshot["ethtool"] == frozenset({owner})
-    assert f"Owner name {owner!r} renders ambiguously:" in caplog.text
+    assert f"Owner name {owner!r} of package 'ethtool' renders ambiguously:" in caplog.text

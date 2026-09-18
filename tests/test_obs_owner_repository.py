@@ -209,7 +209,11 @@ def test_find_owners_warns_about_an_ambiguous_name_and_keeps_it(
 
     assert owners == frozenset({expected})
     assert [record.levelname for record in caplog.records] == ["WARNING"] * warnings
-    assert all(repr(expected) in record.getMessage() for record in caplog.records)
+    assert all(
+        f"Owner name {expected!r} of package {PACKAGE!r} renders ambiguously:"
+        in record.getMessage()
+        for record in caplog.records
+    )
 
 
 def test_find_owners_reports_what_osc_said_when_it_exits_non_zero(

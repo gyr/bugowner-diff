@@ -103,11 +103,17 @@ class ObsOwnerRepositoryImpl:
         stated once, on :meth:`ObsOwnerRepository.find_owners`. Restating it
         here would give the two halves room to drift.
         """
-        return _parse_owners(_fetch_owners(package))
+        return _parse_owners(_fetch_owners(package), package)
 
 
-def _parse_owners(body: bytes) -> frozenset[str]:
-    """Return the tagged owner names of a ``<collection>`` document."""
+def _parse_owners(body: bytes, package: str) -> frozenset[str]:
+    """Return the tagged owner names of a ``<collection>`` document.
+
+    ``package`` is the package the document answers for, and is here only to
+    locate the ambiguity warning: across a run that makes one lookup per
+    package, a warning naming the owner but not the package says nothing about
+    where it came from.
+    """
     try:
         root = ET.fromstring(body, forbid_dtd=True)
     # DefusedXmlException, not ValueError: the two are related by inheritance,
@@ -187,7 +193,9 @@ def _parse_owners(body: bytes) -> frozenset[str]:
             # warning is what explains a cell that reads oddly later.
             reason = ambiguity_reason(name, is_group=is_group)
             if reason is not None:
-                logger.warning(f"Owner name {tagged!r} renders ambiguously: {reason}")
+                logger.warning(
+                    f"Owner name {tagged!r} of package {package!r} renders ambiguously: {reason}"
+                )
             names.add(tagged)
     # A bare <collection/> arrives here as an empty set, which is the real answer
     # for 3 of the 88 packages probed and is what later produces `unmaintained`.

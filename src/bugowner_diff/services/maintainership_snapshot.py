@@ -93,7 +93,10 @@ def _tagged_owners(package_name: str, entry: dict[str, Any]) -> frozenset[str]:
             # two call sites cannot spell one message two ways.
             reason = ambiguity_reason(name, is_group=is_group)
             if reason is not None:
-                logger.warning(f"Owner name {tagged!r} renders ambiguously: {reason}")
+                logger.warning(
+                    f"Owner name {tagged!r} of package {package_name!r} renders "
+                    f"ambiguously: {reason}"
+                )
             names.add(tagged)
     return frozenset(names)
 

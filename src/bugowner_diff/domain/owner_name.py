@@ -82,9 +82,10 @@ def ambiguity_reason(name: str, *, is_group: bool) -> str | None:
         A reason phrase, or None when the name renders unambiguously.
 
         The phrase is a sentence fragment completing the frame
-        ``f"Owner name {tagged!r} renders ambiguously: {reason}"``. Every
-        caller writes that wrapper itself, so the frame is stated here to keep
-        two call sites from spelling the same message two ways.
+        ``f"Owner name {tagged!r} of package {package!r} renders ambiguously:
+        {reason}"``. Every caller writes that wrapper itself, so the frame is
+        stated here to keep two call sites from spelling the same message two
+        ways.
 
         At most one reason, and the order is deliberate. Emptiness is disjoint
         from the other two. The collapse outranks whitespace because a collapse
