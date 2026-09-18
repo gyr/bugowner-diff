@@ -2,6 +2,7 @@
 name = "bugowner-diff"
 dynamic = ["version"]
 description = "Diff package bugownership between an IBS project and the SLFO maintainership file"
+readme = "README.md"
 authors = [
     {name = "Gustavo Yokoyama Ribeiro", email = "gyribeiro@suse.com"}
 ]
