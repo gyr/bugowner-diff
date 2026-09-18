@@ -50,9 +50,16 @@ class NetworkTimeoutError(BugownerDiffError):
 class InputError(BugownerDiffError):
     """A value supplied by the user is unusable.
 
-    Raised for a malformed command-line argument or an unusable input file --
-    the failures the user can fix by re-running with different arguments. The
-    CLI maps it onto :attr:`~bugowner_diff.exit_codes.ExitCode.USAGE`.
+    Raised for a malformed command-line argument or for an input file whose
+    *contents* are unusable -- the failures the user can fix by re-running with
+    different arguments. The CLI maps it onto
+    :attr:`~bugowner_diff.exit_codes.ExitCode.USAGE`.
+
+    The line against ``OSError`` is errno versus contents. An ``-i`` path that
+    cannot be opened or read raises ``OSError``, which travels unwrapped to
+    exit 1 because errno already says more about a failed open than a wrapper
+    could add. This type is reserved for a file that read fine and then said
+    something the tool cannot use, which is exit 64.
 
     Message-only, unlike the two types above: what makes an input unusable
     differs per call site, and a fixed constructor argument would force every
