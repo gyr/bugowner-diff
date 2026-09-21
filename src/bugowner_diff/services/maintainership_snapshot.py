@@ -154,7 +154,7 @@ def parse_tagged_snapshot(document: bytes) -> dict[str, frozenset[str]]:
     # Absent and present-but-wrong are one condition with one message: either
     # way the mapping this reads is not there, and an absent key read as an
     # empty one would answer that every package is missing from the document,
-    # reporting the whole project as `dropped`.
+    # reporting the whole project as `removed`.
     if not isinstance(packages, dict):
         raise DataSourceError(
             f"The maintainership document has no usable 'packages' object: expected a JSON "

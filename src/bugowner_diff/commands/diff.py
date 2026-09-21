@@ -12,7 +12,7 @@ inside the run.
 
 One thing is validated here and nowhere else: the two owner cells. Owner names
 come from two untrusted remote documents and no earlier stage has ever looked at
-them. The other two cells are not in that position. The status cell is a
+them. The other two cells are not in that position. The change cell is a
 :class:`~bugowner_diff.domain.status_row.Status` member. The package cell came
 from the operator's own input file through the allowlist in
 :mod:`bugowner_diff.repositories.package_list_repository` -- which is a
@@ -73,7 +73,7 @@ from bugowner_diff.services.status_service import classify
 # because ordinary names are full of it.
 _RENDERABLE_OWNER_NAME = re.compile(r"[A-Za-z0-9._:][A-Za-z0-9._:-]*")
 
-_HEADER = ["package", "15", "16", "status"]
+_HEADER = ["package", "15", "16", "change"]
 
 
 def run_diff(
@@ -139,8 +139,8 @@ def run_diff(
         # `snapshot.get(package)` carries no default, and that is the second half
         # of the contract `classify` is written against: a `frozenset()` default
         # would collapse "the document has no entry" into "the document names
-        # nobody", the DROPPED rung would never fire, and the one dropped package
-        # of the measured run would report as `outdated` -- a plausible,
+        # nobody", the REMOVED rung would never fire, and the one removed package
+        # of the measured run would report as `changed` -- a plausible,
         # complete, wrong answer.
         rows.append(_cells(classify(package, sle15_owners, snapshot.get(package))))
     with _open_output(output_path) as handle:
@@ -182,8 +182,9 @@ def _open_output(path: Path | None) -> Iterator[TextIO]:
 def _cells(row: StatusRow) -> list[str]:
     """Render one row as its four CSV cells, in the row's own field order.
 
-    ``status`` needs no conversion: :class:`~bugowner_diff.domain.status_row.Status`
-    is a ``StrEnum``, so a member already *is* the cell it writes.
+    The ``change`` cell needs no conversion: the ``status`` field holds a
+    :class:`~bugowner_diff.domain.status_row.Status`, which is a ``StrEnum``, so
+    the member already *is* the cell it writes.
     """
     return [
         row.package,

@@ -8,37 +8,40 @@ class Status(StrEnum):
     """Outcome of comparing one package's owners across the two sources.
 
     Members are :class:`~enum.StrEnum` so that a member *is* the CSV cell the
-    writer emits; a plain :class:`~enum.Enum` would render as ``Status.NEW``.
+    writer emits; a plain :class:`~enum.Enum` would render as ``Status.ADDED``.
 
-    - ``NEW`` -- absent from the IBS project listing.
+    - ``ADDED`` -- absent from the IBS project listing.
     - ``UNMAINTAINED`` -- present there, but the owner search returns nobody.
-    - ``DROPPED`` -- owned on the 15 side, absent from the maintainership file.
+    - ``REMOVED`` -- owned on the 15 side, absent from the maintainership file.
     - ``NONE`` -- both sides agree; no difference to report.
-    - ``OUTDATED`` -- both sides name owners, and the two sets differ.
+    - ``CHANGED`` -- both sides name owners, and the two sets differ.
     """
 
-    NEW = "new"
+    ADDED = "added"
     UNMAINTAINED = "unmaintained"
-    DROPPED = "dropped"
+    REMOVED = "removed"
     NONE = "none"
-    OUTDATED = "outdated"
+    CHANGED = "changed"
 
 
 @dataclass(frozen=True)
 class StatusRow:
     """One package's ownership on both sides, with the status that follows.
 
-    Field order is the CSV column order (``package,15,16,status``).
+    Field order is the CSV column order, which the header spells
+    ``package,15,16,change``: the fields are named for what they hold, the
+    columns for how the report reads, so the ``status`` field is written under
+    the ``change`` column.
 
     Both owner sets hold names already tagged by
     :mod:`bugowner_diff.domain.owner_name`, because equality is exact set
     equality on tagged names: an untagged name reaching this row would compare
-    unequal to its tagged twin and report a spurious ``OUTDATED``.
+    unequal to its tagged twin and report a spurious ``CHANGED``.
 
     An empty set means the side named nobody. There is deliberately no ``None``
     sentinel for "the package is absent on that side": :class:`Status` already
-    separates absent-from-15 (``NEW``) from present-but-unowned
-    (``UNMAINTAINED``) and absent-from-16 (``DROPPED``) from agreed-empty, so a
+    separates absent-from-15 (``ADDED``) from present-but-unowned
+    (``UNMAINTAINED``) and absent-from-16 (``REMOVED``) from agreed-empty, so a
     second encoding of the same fact could only ever contradict the first.
 
     Whether ``status`` actually follows from the two sets is

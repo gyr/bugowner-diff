@@ -78,7 +78,7 @@ def _install_osc(monkeypatch: pytest.MonkeyPatch, osc: _RecordingOsc) -> _Record
 def test_list_packages_returns_the_names_of_the_listing_entries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # The one thing the module exists to do. Every `new` row in the report is
+    # The one thing the module exists to do. Every `added` row in the report is
     # decided by membership of this set, so a name lost in parsing is a package
     # reported as absent from a project it is in.
     _install_osc(monkeypatch, _RecordingOsc())
@@ -188,7 +188,7 @@ def test_list_packages_reports_a_data_source_error_when_osc_exits_non_zero(
     # An unreachable API, an expired credential or a project that does not
     # exist all arrive here as a non-zero exit with an empty stdout, and an
     # empty stdout parses into an empty listing -- which would report all 119
-    # packages as `new` and look like a successful run. The type matters as much
+    # packages as `added` and look like a successful run. The type matters as much
     # as the raise: RuntimeError, the sibling project's choice, also catches
     # RecursionError, so a crash in the parser would be reported to the user as
     # a bad remote document.
@@ -318,7 +318,7 @@ def test_list_packages_refuses_a_document_that_is_not_a_directory_listing(
     # OBS answers some failures with a well-formed <status> document, and osc
     # does not always exit non-zero when it does. findall("entry") on that
     # document finds nothing and returns an empty set -- which classifies all
-    # 119 packages as `new` and writes a full, plausible, entirely wrong CSV.
+    # 119 packages as `added` and writes a full, plausible, entirely wrong CSV.
     # The root element is the only thing that distinguishes the two.
     status = b"<status code='unknown_project'><summary>project not found</summary></status>"
     _install_osc(monkeypatch, _RecordingOsc(stdout=status))
@@ -372,7 +372,7 @@ def test_list_packages_refuses_a_listing_that_nests_an_entry_inside_another(
     # findall("entry") matches direct children only, so the inner entry is
     # silently absent from the result -- verified: this document yields
     # {"ethtool"} and "spice" is simply gone. A lost name is a package reported
-    # as `new` against a project it is in, which is the one failure this module
+    # as `added` against a project it is in, which is the one failure this module
     # cannot be allowed to have. Walking the children instead of searching them
     # is what makes the loss impossible; this is the test that proves it.
     _install_osc(
@@ -543,7 +543,7 @@ def test_list_packages_returns_nothing_for_a_valid_but_empty_listing(
 ) -> None:
     # An empty project is a legitimate answer, not a failure: the root element
     # is what proves the document was a listing, so there is nothing left to
-    # suspect. Every package is then `new`, which is the truth for an empty
+    # suspect. Every package is then `added`, which is the truth for an empty
     # project.
     _install_osc(monkeypatch, _RecordingOsc(stdout=b"<directory count='0'/>"))
 

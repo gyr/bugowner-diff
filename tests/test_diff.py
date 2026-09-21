@@ -9,7 +9,7 @@ import pytest
 from bugowner_diff.commands.diff import run_diff
 from bugowner_diff.exceptions import DataSourceError
 
-EXPECTED_HEADER = "package,15,16,status"
+EXPECTED_HEADER = "package,15,16,change"
 
 
 class _FakePackageList:
@@ -101,7 +101,7 @@ def test_run_diff_writes_the_header_then_every_status_as_a_row_in_input_order(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # One fixture over all five statuses, shaped after the measured 119-package
-    # run: 49 none, 35 outdated, 31 new, 3 unmaintained, 1 dropped. All five are
+    # run: 49 none, 35 changed, 31 added, 3 unmaintained, 1 removed. All five are
     # named in the test's own name because two of these rows are the only place
     # a contract is pinned, and a later trim of the fixture that dropped one
     # would otherwise leave every test name still looking right.
@@ -109,9 +109,9 @@ def test_run_diff_writes_the_header_then_every_status_as_a_row_in_input_order(
     # Two rows carry the contract the rest of the file cannot see. `spice` is
     # absent from the maintainership document, and only a `snapshot.get` without
     # a default tells that apart from an entry naming nobody -- with a
-    # `frozenset()` default it would report as `outdated`, which is plausible,
+    # `frozenset()` default it would report as `changed`, which is plausible,
     # complete and wrong. `SDL3` is absent from the project listing and still
-    # shows a 16 owner, as 28 of the 31 measured `new` rows do.
+    # shows a 16 owner, as 28 of the 31 measured `added` rows do.
     _run(
         ["abseil-cpp", "blktrace", "spice", "catatonit", "SDL3"],
         frozenset({"abseil-cpp", "blktrace", "spice", "catatonit"}),
@@ -132,10 +132,10 @@ def test_run_diff_writes_the_header_then_every_status_as_a_row_in_input_order(
     assert capsys.readouterr().out == (
         f"{EXPECTED_HEADER}\n"
         "abseil-cpp,group:team-a,group:team-a,none\n"
-        "blktrace,user-a,user-b,outdated\n"
-        "spice,group:team-a,,dropped\n"
+        "blktrace,user-a,user-b,changed\n"
+        "spice,group:team-a,,removed\n"
         "catatonit,,user-c,unmaintained\n"
-        "SDL3,,group:team-a,new\n"
+        "SDL3,,group:team-a,added\n"
     )
 
 
@@ -154,7 +154,7 @@ def test_run_diff_joins_each_owner_cell_with_a_space_in_sorted_order(
     )
 
     assert capsys.readouterr().out == (
-        f"{EXPECTED_HEADER}\ncrmsh,user-a user-b user-c,group:team-b user-a user-c,outdated\n"
+        f"{EXPECTED_HEADER}\ncrmsh,user-a user-b user-c,group:team-b user-a user-c,changed\n"
     )
 
 

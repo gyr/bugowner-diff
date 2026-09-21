@@ -1,11 +1,11 @@
 """List the packages of an IBS project, inherited ones included.
 
-This is the source that decides which packages are ``new``: a name absent from
+This is the source that decides which packages are ``added``: a name absent from
 the listing is a package the 15 side does not have. The listing is fetched with
 ``?expand=1``, so it carries packages inherited from the project's link as well
 as the locally defined ones -- 606 entries without it, 62809 with, and 88 of
 the 119 input packages exist only by inheritance. Nothing here filters them
-out; that is the settled decision the ``new`` count depends on.
+out; that is the settled decision the ``added`` count depends on.
 
 Transport is an ``osc api`` subprocess, never an HTTP client: ``api.suse.de``
 wants an SSH-signature auth that HTTP Basic cannot supply, and delegating to
@@ -217,7 +217,7 @@ def _parse_listing(body: bytes) -> frozenset[str]:
     # OBS answers some failures with a well-formed <status> document, and osc
     # does not reliably exit non-zero when it does. Reading entries out of one
     # of those finds nothing, and an empty listing classifies every package as
-    # `new` -- a complete, plausible, entirely wrong report. The root element is
+    # `added` -- a complete, plausible, entirely wrong report. The root element is
     # what tells the two documents apart.
     if root.tag != _LISTING_ROOT_TAG:
         raise DataSourceError(

@@ -40,30 +40,30 @@ def classify(
         The package's :class:`~bugowner_diff.domain.status_row.StatusRow`. A
         side that has no entry becomes an empty cell, since ``StatusRow`` has no
         ``None`` sentinel by design; a side that answered is carried through
-        unchanged, including the 16 column of a ``new`` package, which usually
+        unchanged, including the 16 column of an ``added`` package, which usually
         does have SLFO maintainers to show.
     """
     # The order of the four tests is load-bearing, and two rungs are not
     # arbitrary. `sle15_owners is None` comes before `slfo_maintainers is None`
     # because three packages in the measured 119-name run -- `hiredis`,
     # `iansible-trento`, `toolbox-branding-SLE` -- are absent from both sources,
-    # and a package nobody has ever packaged is `new` rather than dropped from a
-    # project it was never in. `not sle15_owners` also comes before
-    # `slfo_maintainers is None`, for a different reason: `Status.DROPPED` is
+    # and a package nobody has ever packaged is `added` rather than removed from
+    # a project it was never in. `not sle15_owners` also comes before
+    # `slfo_maintainers is None`, for a different reason: `Status.REMOVED` is
     # defined as "owned on the 15 side, absent from the maintainership file", so
-    # a package with no 15-side owner cannot be dropped. That case does not occur
-    # in the measured data -- the one dropped package has a 15-side owner -- so
+    # a package with no 15-side owner cannot be removed. That case does not occur
+    # in the measured data -- the one removed package has a 15-side owner -- so
     # the docstring decides it.
     if sle15_owners is None:
-        status = Status.NEW
+        status = Status.ADDED
     elif not sle15_owners:
         status = Status.UNMAINTAINED
     elif slfo_maintainers is None:
-        status = Status.DROPPED
+        status = Status.REMOVED
     elif sle15_owners == slfo_maintainers:
         status = Status.NONE
     else:
-        status = Status.OUTDATED
+        status = Status.CHANGED
     return StatusRow(
         package=package,
         sle15_owners=frozenset() if sle15_owners is None else sle15_owners,

@@ -119,7 +119,7 @@ def test_parse_tagged_snapshot_refuses_a_document_without_a_packages_object(
     # `packages` key and one whose `packages` is a list are both "the mapping
     # this reads is not there", and an absent key would otherwise read as a
     # document every package is missing from, reporting the whole project as
-    # `dropped`.
+    # `removed`.
     with pytest.raises(DataSourceError) as caught:
         parse_tagged_snapshot(document)
 

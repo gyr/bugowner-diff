@@ -161,7 +161,7 @@ def test_a_whole_run_turns_the_three_sources_into_one_report(
     # owner parser and on the 16 side by the snapshot parser compare equal;
     # `catatonit` that `<collection/>` survives as an empty set and not as
     # "absent"; `spice` that the listing and the document disagreeing is
-    # `dropped`; `SDL3` that a package absent from the listing keeps its 16
+    # `removed`; `SDL3` that a package absent from the listing keeps its 16
     # cell; `hiredis` that a package no source knows is still a row.
     input_path = tmp_path / "packages.txt"
     input_path.write_text("abseil-cpp\nblktrace\ncatatonit\nspice\nSDL3\nhiredis\n")
@@ -183,13 +183,13 @@ def test_a_whole_run_turns_the_three_sources_into_one_report(
 
     assert exit_code == ExitCode.OK
     assert output_path.read_text(encoding="utf-8") == (
-        "package,15,16,status\n"
+        "package,15,16,change\n"
         "abseil-cpp,group:team-a,group:team-a,none\n"
-        "blktrace,user-a,group:team-a user-b,outdated\n"
+        "blktrace,user-a,group:team-a user-b,changed\n"
         "catatonit,,user-c,unmaintained\n"
-        "spice,group:team-b,,dropped\n"
-        "SDL3,,group:team-a,new\n"
-        "hiredis,,,new\n"
+        "spice,group:team-b,,removed\n"
+        "SDL3,,group:team-a,added\n"
+        "hiredis,,,added\n"
     )
 
 
