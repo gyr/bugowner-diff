@@ -16,16 +16,22 @@ from bugowner_diff.services.status_service import classify
             StatusRow("SDL3", frozenset(), frozenset({"group:team-a"}), Status.ADDED),
         ),
         (
-            "catatonit",
-            frozenset(),
-            frozenset({"group:team-a"}),
-            StatusRow("catatonit", frozenset(), frozenset({"group:team-a"}), Status.UNMAINTAINED),
-        ),
-        (
             "spice",
             frozenset({"group:team-a"}),
             None,
             StatusRow("spice", frozenset({"group:team-a"}), frozenset(), Status.REMOVED),
+        ),
+        (
+            "catatonit",
+            frozenset(),
+            frozenset({"group:team-a"}),
+            StatusRow("catatonit", frozenset(), frozenset({"group:team-a"}), Status.ADOPTED),
+        ),
+        (
+            "package-a",
+            frozenset({"group:team-a"}),
+            frozenset(),
+            StatusRow("package-a", frozenset({"group:team-a"}), frozenset(), Status.UNMAINTAINED),
         ),
         (
             "abseil-cpp",
@@ -45,7 +51,7 @@ from bugowner_diff.services.status_service import classify
             StatusRow("crmsh", frozenset({"user-a"}), frozenset({"user-b"}), Status.CHANGED),
         ),
     ],
-    ids=["added", "unmaintained", "removed", "none", "changed"],
+    ids=["added", "removed", "adopted", "unmaintained", "none", "changed"],
 )
 def test_classify_reports_the_status_the_two_owner_sets_imply(
     package: str,
@@ -53,14 +59,22 @@ def test_classify_reports_the_status_the_two_owner_sets_imply(
     slfo_maintainers: frozenset[str] | None,
     expected: StatusRow,
 ) -> None:
-    # The whole ladder in one table, one row per status, each row a shape
-    # measured in the live 119-package run. The assertion is on the whole row
-    # rather than on `.status`, because the row is where the second half of the
-    # contract shows: an absent side becomes an empty cell, and a side that
-    # answered is carried through unchanged -- including the 16 column of an
-    # `added` package, which 28 of the 31 measured `added` rows actually fill.
+    # The whole ladder in one table, one row per status. Every row is a shape
+    # measured in the live 119-package run except `package-a`'s: `classify`
+    # documents that the 16 document never answers with an empty owner set, so
+    # the `unmaintained` rung is unreachable from real data and is here for
+    # structural completeness and vocabulary parity with the sibling project.
+    # It carries a placeholder name for that reason -- a measured package name
+    # on a shape no measurement produced is how a sample gets read as a
+    # contract.
     #
-    # The `unmaintained` and `none` rows are what makes the empty set and
+    # The assertion is on the whole row rather than on `.status`, because the
+    # row is where the second half of the contract shows: an absent side
+    # becomes an empty cell, and a side that answered is carried through
+    # unchanged -- including the 16 column of an `added` package, which 28 of
+    # the 31 measured `added` rows actually fill.
+    #
+    # The `adopted` and `none` rows are what makes the empty set and
     # `None` distinct arguments rather than two spellings of "nothing": the
     # first side answered and named nobody, and reading that as absent would
     # report the package as `added`.
@@ -71,26 +85,28 @@ def test_classify_reports_the_status_the_two_owner_sets_imply(
     ("package", "sle15_owners", "expected_status"),
     [
         ("hiredis", None, Status.ADDED),
-        ("package-a", frozenset(), Status.UNMAINTAINED),
+        ("package-a", frozenset(), Status.REMOVED),
     ],
     ids=["absent-from-both", "unowned-on-15-and-absent-from-16"],
 )
-def test_classify_settles_a_package_absent_from_16_by_its_15_side_first(
+def test_classify_tests_both_absences_before_either_emptiness(
     package: str, sle15_owners: frozenset[str] | None, expected_status: Status
 ) -> None:
-    # Both rows have no entry in the maintainership file, and neither is
-    # `removed`: the 15 side is consulted first and answers both of them.
+    # Both rows have no entry in the maintainership file, and each is answered
+    # by an absence test rather than by the emptiness test below it: the first
+    # row never reaches rung 2, the second never reaches rung 3.
     #
     # The first row is measured -- `hiredis`, `iansible-trento` and
     # `toolbox-branding-SLE` are absent from both sources in the live run -- and
     # a package nobody has ever packaged is `added`, not removed from a project
-    # it was never in. The second row is settled by `Status.REMOVED`'s own
-    # docstring, "owned on the 15 side, absent from the maintainership file": a
-    # package with no 15-side owner cannot be removed. It does not occur in the
-    # live data, where the one removed package has a 15-side owner, so the
-    # docstring decides it and this test is the only thing pinning the order.
-    # It carries a placeholder name for that reason: a measured package name on
-    # a shape no measurement produced is how a sample gets read as a contract.
+    # it was never in. The second row is settled by nothing but the chosen rung
+    # order, which follows the sibling project: both absence tests precede both
+    # emptiness tests, so an empty 15 side does not stop a package missing from
+    # the 16 document being `removed`. It does not occur in the live data, where
+    # the one removed package has a 15-side owner, so this test is the only
+    # thing pinning the order. It carries a placeholder name for that reason: a
+    # measured package name on a shape no measurement produced is how a sample
+    # gets read as a contract.
     row = classify(package, sle15_owners, None)
 
     assert row == StatusRow(package, frozenset(), frozenset(), expected_status)

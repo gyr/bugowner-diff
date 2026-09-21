@@ -52,8 +52,9 @@ _LISTING_XML = b"""<directory count="5">
 # One document per package that is in the input file *and* in the listing; no
 # other package is ever searched for, and `_fake_run` fails on an unexpected
 # one. `catatonit` answers with a bare `<collection/>`, the real answer for 3 of
-# the 88 packages probed and the only thing that produces `unmaintained`. The
-# `project` and `package` attributes are carried because the real answers carry
+# the 88 packages probed. It reads as `adopted` here because the maintainership
+# document has an entry for `catatonit`; with no entry it would be `removed`.
+# The `project` and `package` attributes are carried because the real answers carry
 # them; the parser inspects neither.
 _OWNER_XML = {
     "abseil-cpp": b'<collection><owner project="SUSE:SLE-15:GA" package="abseil-cpp">'
@@ -156,11 +157,11 @@ def _fake_run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[byt
 def test_a_whole_run_turns_the_three_sources_into_one_report(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Six rows over all five statuses, each one pinning a join the unit tests
-    # make separately: `abseil-cpp` that a group tagged on the 15 side by the
-    # owner parser and on the 16 side by the snapshot parser compare equal;
-    # `catatonit` that `<collection/>` survives as an empty set and not as
-    # "absent"; `spice` that the listing and the document disagreeing is
+    # Six rows over all five measured statuses, each one pinning a join the
+    # unit tests make separately: `abseil-cpp` that a group tagged on the 15
+    # side by the owner parser and on the 16 side by the snapshot parser compare
+    # equal; `catatonit` that `<collection/>` survives as an empty set and not
+    # as "absent"; `spice` that the listing and the document disagreeing is
     # `removed`; `SDL3` that a package absent from the listing keeps its 16
     # cell; `hiredis` that a package no source knows is still a row.
     input_path = tmp_path / "packages.txt"
@@ -186,7 +187,7 @@ def test_a_whole_run_turns_the_three_sources_into_one_report(
         "package,15,16,change\n"
         "abseil-cpp,group:team-a,group:team-a,none\n"
         "blktrace,user-a,group:team-a user-b,changed\n"
-        "catatonit,,user-c,unmaintained\n"
+        "catatonit,,user-c,adopted\n"
         "spice,group:team-b,,removed\n"
         "SDL3,,group:team-a,added\n"
         "hiredis,,,added\n"

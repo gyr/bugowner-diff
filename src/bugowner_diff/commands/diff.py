@@ -140,7 +140,7 @@ def run_diff(
         # of the contract `classify` is written against: a `frozenset()` default
         # would collapse "the document has no entry" into "the document names
         # nobody", the REMOVED rung would never fire, and the one removed package
-        # of the measured run would report as `changed` -- a plausible,
+        # of the measured run would report as `unmaintained` -- a plausible,
         # complete, wrong answer.
         rows.append(_cells(classify(package, sle15_owners, snapshot.get(package))))
     with _open_output(output_path) as handle:

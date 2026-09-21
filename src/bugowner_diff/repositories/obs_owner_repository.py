@@ -2,8 +2,9 @@
 
 This is the 15 side of the diff: the owner set read here is compared, as exact
 set equality on tagged names, against the one the SLFO maintainership document
-gives, and a package the search returns no owner for is what produces
-``unmaintained``.
+gives. A package the search returns no owner for is ``adopted`` when that
+document has an entry for it and ``removed`` when it does not: the 15 side alone
+does not decide the status.
 
 The query is ``/search/owner?package=<name>`` and carries neither a project nor
 a ``filter``. Both omissions are deliberate and were measured: scoping the
@@ -134,7 +135,8 @@ def _parse_owners(body: bytes, package: str) -> frozenset[str]:
     # OBS answers some failures with a well-formed <status> document, and osc
     # does not reliably exit non-zero when it does. Reading members out of one
     # finds nothing, and no owners is a plausible, complete and entirely wrong
-    # `unmaintained` row. The root element is what tells the two documents apart.
+    # `adopted` row -- or `removed`, when the 16 document has no entry either.
+    # The root element is what tells the two documents apart.
     if root.tag != "collection":
         raise DataSourceError(
             f"Expected a <collection> owner search answer but the root element is "
@@ -198,7 +200,8 @@ def _parse_owners(body: bytes, package: str) -> frozenset[str]:
                 )
             names.add(tagged)
     # A bare <collection/> arrives here as an empty set, which is the real answer
-    # for 3 of the 88 packages probed and is what later produces `unmaintained`.
+    # for 3 of the 88 packages probed and is what later produces `adopted`, or
+    # `removed` for a package the 16 document has no entry for.
     return frozenset(names)
 
 
@@ -238,8 +241,9 @@ def _fetch_owners(package: str) -> bytes:
     if proc.returncode != 0:
         # Every non-zero exit, a 404 for an unknown package included: the only
         # alternative is matching osc's English stderr, which changes with its
-        # locale and version, and getting that wrong writes `unmaintained` for a
-        # package whose ownership was never read. stderr is reproduced with !r
+        # locale and version, and getting that wrong writes `adopted`, or
+        # `removed`, for a package whose ownership was never read. stderr is
+        # reproduced with !r
         # because it is remote-influenced text on its way to a terminal.
         raise DataSourceError(
             f"osc api {api_path!r} exited {proc.returncode}: "

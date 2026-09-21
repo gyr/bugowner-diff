@@ -11,15 +11,21 @@ class Status(StrEnum):
     writer emits; a plain :class:`~enum.Enum` would render as ``Status.ADDED``.
 
     - ``ADDED`` -- absent from the IBS project listing.
-    - ``UNMAINTAINED`` -- present there, but the owner search returns nobody.
-    - ``REMOVED`` -- owned on the 15 side, absent from the maintainership file.
+    - ``REMOVED`` -- present there, absent from the maintainership file.
+    - ``ADOPTED`` -- nobody owns it on 15, someone does on 16.
+    - ``UNMAINTAINED`` -- owned on 15, but the maintainership file names nobody.
     - ``NONE`` -- both sides agree; no difference to report.
     - ``CHANGED`` -- both sides name owners, and the two sets differ.
+
+    The members are declared in the order
+    ``services.status_service.classify`` tests them, so the vocabulary reads as
+    the ladder that produces it.
     """
 
     ADDED = "added"
-    UNMAINTAINED = "unmaintained"
     REMOVED = "removed"
+    ADOPTED = "adopted"
+    UNMAINTAINED = "unmaintained"
     NONE = "none"
     CHANGED = "changed"
 
@@ -39,10 +45,12 @@ class StatusRow:
     unequal to its tagged twin and report a spurious ``CHANGED``.
 
     An empty set means the side named nobody. There is deliberately no ``None``
-    sentinel for "the package is absent on that side": :class:`Status` already
-    separates absent-from-15 (``ADDED``) from present-but-unowned
-    (``UNMAINTAINED``) and absent-from-16 (``REMOVED``) from agreed-empty, so a
-    second encoding of the same fact could only ever contradict the first.
+    sentinel for "the package is absent on that side": absent and unowned are
+    facts :class:`Status` already keeps apart, on 15 by ``ADDED`` against
+    ``ADOPTED`` and on 16 by ``REMOVED`` against ``UNMAINTAINED``, so a second
+    encoding of the same fact could only ever contradict the first. Each pair
+    names the distinction its members carry, not a definition of either one:
+    ``REMOVED`` also takes an unowned 15 side, when 16 has no entry at all.
 
     Whether ``status`` actually follows from the two sets is
     ``services.status_service.classify``'s invariant, not this type's. A

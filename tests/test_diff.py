@@ -97,20 +97,22 @@ def _run(
     return owner_repository
 
 
-def test_run_diff_writes_the_header_then_every_status_as_a_row_in_input_order(
+def test_run_diff_writes_the_header_then_every_measured_status_as_a_row_in_input_order(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    # One fixture over all five statuses, shaped after the measured 119-package
-    # run: 49 none, 35 changed, 31 added, 3 unmaintained, 1 removed. All five are
-    # named in the test's own name because two of these rows are the only place
-    # a contract is pinned, and a later trim of the fixture that dropped one
-    # would otherwise leave every test name still looking right.
+    # One fixture over all five statuses the measured 119-package run produces:
+    # 49 none, 35 changed, 31 added, 3 adopted, 1 removed. `unmaintained` is the
+    # sixth value of the vocabulary and is deliberately absent -- it needs a 16
+    # entry that names nobody, which no measured entry is. The name says
+    # `every_measured_status` because two of these rows are the only place a
+    # contract is pinned, and a later trim of the fixture that dropped one would
+    # otherwise leave the name still looking right.
     #
     # Two rows carry the contract the rest of the file cannot see. `spice` is
     # absent from the maintainership document, and only a `snapshot.get` without
     # a default tells that apart from an entry naming nobody -- with a
-    # `frozenset()` default it would report as `changed`, which is plausible,
-    # complete and wrong. `SDL3` is absent from the project listing and still
+    # `frozenset()` default it would report as `unmaintained`, which is
+    # plausible, complete and wrong. `SDL3` is absent from the listing and still
     # shows a 16 owner, as 28 of the 31 measured `added` rows do.
     _run(
         ["abseil-cpp", "blktrace", "spice", "catatonit", "SDL3"],
@@ -134,7 +136,7 @@ def test_run_diff_writes_the_header_then_every_status_as_a_row_in_input_order(
         "abseil-cpp,group:team-a,group:team-a,none\n"
         "blktrace,user-a,user-b,changed\n"
         "spice,group:team-a,,removed\n"
-        "catatonit,,user-c,unmaintained\n"
+        "catatonit,,user-c,adopted\n"
         "SDL3,,group:team-a,added\n"
     )
 

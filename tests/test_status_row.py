@@ -7,17 +7,23 @@ import pytest
 from bugowner_diff.domain.status_row import Status, StatusRow
 
 
-def test_status_defines_exactly_the_documented_name_to_value_mapping() -> None:
+def test_status_defines_exactly_the_documented_name_to_value_pairs_in_ladder_order() -> None:
     # The values are the literal CSV cells sampled in plan section 2.6, so the
     # writer emits the member itself instead of keeping a second lookup table
     # that could drift away from this one.
-    assert {member.name: member.value for member in Status} == {
-        "ADDED": "added",
-        "UNMAINTAINED": "unmaintained",
-        "REMOVED": "removed",
-        "NONE": "none",
-        "CHANGED": "changed",
-    }
+    #
+    # A list of pairs rather than a dict, because the declaration order is part
+    # of what is asserted: the class docstring says the members are declared in
+    # the order `classify` tests them, and a dict comparison ignores order, so
+    # that claim would go stale green.
+    assert [(member.name, member.value) for member in Status] == [
+        ("ADDED", "added"),
+        ("REMOVED", "removed"),
+        ("ADOPTED", "adopted"),
+        ("UNMAINTAINED", "unmaintained"),
+        ("NONE", "none"),
+        ("CHANGED", "changed"),
+    ]
 
 
 def test_status_members_are_strings() -> None:

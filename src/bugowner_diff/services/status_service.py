@@ -43,23 +43,27 @@ def classify(
         unchanged, including the 16 column of an ``added`` package, which usually
         does have SLFO maintainers to show.
     """
-    # The order of the four tests is load-bearing, and two rungs are not
-    # arbitrary. `sle15_owners is None` comes before `slfo_maintainers is None`
-    # because three packages in the measured 119-name run -- `hiredis`,
-    # `iansible-trento`, `toolbox-branding-SLE` -- are absent from both sources,
-    # and a package nobody has ever packaged is `added` rather than removed from
-    # a project it was never in. `not sle15_owners` also comes before
-    # `slfo_maintainers is None`, for a different reason: `Status.REMOVED` is
-    # defined as "owned on the 15 side, absent from the maintainership file", so
-    # a package with no 15-side owner cannot be removed. That case does not occur
-    # in the measured data -- the one removed package has a 15-side owner -- so
-    # the docstring decides it.
+    # The order of the five tests is load-bearing. Both absence tests come
+    # before both emptiness tests, matching the sibling project's ladder: a side
+    # with no entry is a stronger fact than a side that answered and named
+    # nobody, so it is settled first.
+    #
+    # Within the absences, `sle15_owners is None` comes first because three
+    # packages in the measured 119-name run -- `hiredis`, `iansible-trento`,
+    # `toolbox-branding-SLE` -- are absent from both sources, and a package
+    # nobody has ever packaged is `added` rather than removed from a project it
+    # was never in. The consequence on the other side is that an empty 15 side
+    # no longer stops a package missing from the 16 document being `removed`;
+    # that shape does not occur in the measured data, where the one removed
+    # package has a 15-side owner, so the rung order alone decides it.
     if sle15_owners is None:
         status = Status.ADDED
-    elif not sle15_owners:
-        status = Status.UNMAINTAINED
     elif slfo_maintainers is None:
         status = Status.REMOVED
+    elif not sle15_owners:
+        status = Status.ADOPTED
+    elif not slfo_maintainers:
+        status = Status.UNMAINTAINED
     elif sle15_owners == slfo_maintainers:
         status = Status.NONE
     else:

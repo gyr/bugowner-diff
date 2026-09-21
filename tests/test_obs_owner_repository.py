@@ -127,8 +127,9 @@ def test_find_owners_returns_nothing_for_a_package_nobody_owns(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # A bare <collection/> is the real answer for 3 of the 88 packages probed,
-    # not a failure: an owner-less package is exactly what the `unmaintained`
-    # status is for, and raising here would stop a run over a legitimate answer.
+    # not a failure: an owner-less package is exactly what the `adopted` status
+    # is for -- or `removed`, when the 16 document has no entry for it either --
+    # and raising here would stop a run over a legitimate answer.
     _install_osc(monkeypatch, _RecordingOsc(stdout=b"<collection/>"))
 
     assert ObsOwnerRepositoryImpl().find_owners(PACKAGE) == frozenset()
@@ -222,9 +223,9 @@ def test_find_owners_reports_what_osc_said_when_it_exits_non_zero(
     # Every non-zero exit, 404 included: a package the search does not know is
     # indistinguishable here from an expired credential or an API that is down,
     # and osc's own stderr is the whole of the diagnosis. Treating a 404 as "no
-    # owners" would write `unmaintained` for a package whose ownership was never
-    # read -- and it would have to be recognised by matching English text in
-    # stderr, which changes with osc's locale and version.
+    # owners" would write `adopted`, or `removed`, for a package whose
+    # ownership was never read -- and it would have to be recognised by matching
+    # English text in stderr, which changes with osc's locale and version.
     _install_osc(
         monkeypatch,
         _RecordingOsc(stdout=b"", returncode=2, stderr=b"Server returned an error: HTTP Error 404"),
@@ -328,7 +329,8 @@ def test_find_owners_refuses_a_document_that_is_not_an_owner_collection(
     # OBS answers some failures with a well-formed <status> document, and osc
     # does not reliably exit non-zero when it does. Reading members out of one
     # finds nothing, and no owners is a complete, plausible, entirely wrong
-    # `unmaintained` row. The root element is what tells the two apart.
+    # `adopted` row -- or `removed`, when the 16 document has no entry either.
+    # The root element is what tells the two apart.
     _install_osc(monkeypatch, _RecordingOsc(stdout=b"<status code='unknown_package'/>"))
 
     with pytest.raises(DataSourceError) as caught:
