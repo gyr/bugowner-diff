@@ -5,7 +5,7 @@ disagree.
 
 The **15** side is an OBS project — its package listing and the OBS owner search. The **16** side
 is the SLFO `_maintainership.json` document at a git ref. Given a file of package names, the tool
-emits one CSV row per name: the owners each side names, and the status that follows from
+emits one CSV row per name: the owners each side names, and the change that follows from
 comparing them.
 
 ## Requirements
@@ -61,13 +61,13 @@ and validated before either remote is touched, so a mistyped `-i` costs no netwo
 
 ## The report
 
-The header is `package,15,16,status`.
+The header is `package,15,16,change`.
 
 - `package` — the name as read from the input file.
 - `15` — owners from the OBS owner search. Empty if the package is absent from the project, or
   present with nobody assigned.
 - `16` — maintainers from `_maintainership.json`. Empty if the document has no entry.
-- `status` — one of the five values below.
+- `change` — one of the five values below.
 
 A cell holding more than one owner lists them sorted and space-separated. Group owners carry a
 `group:` prefix on both sides, so the two columns compare like for like.
@@ -76,29 +76,29 @@ The whole report is rendered before the destination is opened. Either a complete
 or nothing is — never a truncated one that reads as finished.
 
 ```
-package,15,16,status
+package,15,16,change
 abseil-cpp,group:team-a,group:team-a,none
-blktrace,user-a,group:team-a user-b,outdated
+blktrace,user-a,group:team-a user-b,changed
 catatonit,,user-c,unmaintained
-spice,group:team-b,,dropped
-SDL3,,group:team-a,new
-hiredis,,,new
+spice,group:team-b,,removed
+SDL3,,group:team-a,added
+hiredis,,,added
 ```
 
-## Statuses
+## The change column
 
-| status | meaning |
+| change | meaning |
 |---|---|
-| `new` | Absent from the project listing. No owner search is made for it, so the 15 cell is empty; the 16 cell still shows whatever the maintainership document says. |
+| `added` | Absent from the project listing. No owner search is made for it, so the 15 cell is empty; the 16 cell still shows whatever the maintainership document says. |
 | `unmaintained` | In the listing, but the owner search names nobody. |
-| `dropped` | Owned on the 15 side, and the maintainership document has no entry. |
+| `removed` | Owned on the 15 side, and the maintainership document has no entry. |
 | `none` | Both sides name owners and the two sets are identical — nothing to report. |
-| `outdated` | Both sides name owners and the two sets differ. |
+| `changed` | Both sides name owners and the two sets differ. |
 
 They are tested in that order, which settles the two cases where more than one could be read to
-apply: a package no source knows is `new` rather than `dropped`, because it was never in the
-project it would have been dropped from; and a package with no 15-side owner is `unmaintained`
-rather than `dropped`, because `dropped` is defined as being owned on the 15 side.
+apply: a package no source knows is `added` rather than `removed`, because it was never in the
+project it would have been removed from; and a package with no 15-side owner is `unmaintained`
+rather than `removed`, because `removed` is defined as being owned on the 15 side.
 
 ## Data sources
 
