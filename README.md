@@ -67,7 +67,7 @@ The header is `package,15,16,change`.
 - `15` — owners from the OBS owner search. Empty if the package is absent from the project, or
   present with nobody assigned.
 - `16` — maintainers from `_maintainership.json`. Empty if the document has no entry.
-- `change` — one of the five values below.
+- `change` — one of the six values below.
 
 A cell holding more than one owner lists them sorted and space-separated. Group owners carry a
 `group:` prefix on both sides, so the two columns compare like for like.
@@ -79,7 +79,7 @@ or nothing is — never a truncated one that reads as finished.
 package,15,16,change
 abseil-cpp,group:team-a,group:team-a,none
 blktrace,user-a,group:team-a user-b,changed
-catatonit,,user-c,unmaintained
+catatonit,,user-c,adopted
 spice,group:team-b,,removed
 SDL3,,group:team-a,added
 hiredis,,,added
@@ -90,15 +90,22 @@ hiredis,,,added
 | change | meaning |
 |---|---|
 | `added` | Absent from the project listing. No owner search is made for it, so the 15 cell is empty; the 16 cell still shows whatever the maintainership document says. |
-| `unmaintained` | In the listing, but the owner search names nobody. |
-| `removed` | Owned on the 15 side, and the maintainership document has no entry. |
+| `removed` | In the listing, and the maintainership document has no entry. |
+| `adopted` | In the listing, but the owner search names nobody, while the maintainership document does. |
+| `unmaintained` | Owned on the 15 side, but the maintainership document names nobody. |
 | `none` | Both sides name owners and the two sets are identical — nothing to report. |
 | `changed` | Both sides name owners and the two sets differ. |
 
-They are tested in that order, which settles the two cases where more than one could be read to
-apply: a package no source knows is `added` rather than `removed`, because it was never in the
-project it would have been removed from; and a package with no 15-side owner is `unmaintained`
-rather than `removed`, because `removed` is defined as being owned on the 15 side.
+They are tested in that order: both absence tests come first, then both emptiness tests. A side with
+no entry is a stronger fact than a side that answered and named nobody, so it settles the row first.
+That order decides the two cases where more than one value could be read to apply. A package no
+source knows is `added` rather than `removed`, because it was never in the project it would have
+been removed from. A package the owner search finds nobody for is `removed` if the maintainership
+document has no entry either, and `adopted` only when that document does name someone.
+
+`unmaintained` needs the maintainership document to have an entry that names nobody. No measured
+entry does — of 2981, 1655 name no users and 1323 no groups, but none is empty on both — so the
+value exists for completeness and does not appear in real reports.
 
 ## Data sources
 
@@ -109,7 +116,7 @@ asked.
 |---|---|
 | the `-i` file | Which packages to report, and in what order. |
 | `osc api '/source/<project>?expand=1'` | Whether a package exists in the project. `expand=1`, so a package inherited from a linked project counts as present. |
-| `osc api '/search/owner?package=<name>'` | Who owns a package that already exists in the project. Every `<person>` and `<group>` returned is an owner; an empty `<collection/>` means nobody, which is `unmaintained`. The search is deliberately unscoped and unfiltered — scoping it to the project answers with project-level fallback owners instead of the package's own. |
+| `osc api '/search/owner?package=<name>'` | Who owns a package that already exists in the project. Every `<person>` and `<group>` returned is an owner; an empty `<collection/>` means nobody, which is `adopted` when the maintainership document has an entry for the package and `removed` when it does not. The search is deliberately unscoped and unfiltered — scoping it to the project answers with project-level fallback owners instead of the package's own. |
 | `git archive --remote=gitea@src.suse.de:products/SLFO.git <ref> -- _maintainership.json` | Who maintains a package on the 16 side. |
 
 The API host and the SLFO repository are fixed; the project and the ref are what you select.
